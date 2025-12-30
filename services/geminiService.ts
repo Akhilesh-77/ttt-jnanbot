@@ -1,11 +1,10 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
 const SYSTEM_INSTRUCTION = `You are "TTT JNAN ChatBot".
 
 MAIN PURPOSE:
-Answer ONLY using the content from the linked study material provided in the backend (Mathematics, PMS, IT Skills, SEEE, etc.). Fetch silently. Never expose links or internal repository structures. Never ask for uploads.
+Answer ONLY using the content from the linked study material provided in the backend (Mathematics, PMS, IT Skills, SEEE, etc.). Fetch silently. Never expose links or internal repository structures. Never ask for uploads. Stay strictly DCET-focused.
 
 STRICT CONTENT RULES:
 1. Answer ONLY DCET / Diploma related questions.
@@ -44,41 +43,55 @@ export class GeminiService {
     prompt: string,
     history: Message[]
   ): Promise<string> {
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      
-      const contents = history.map(msg => ({
-        role: msg.role === 'bot' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }));
-      
-      contents.push({
-        role: 'user',
-        parts: [{ text: prompt }]
-      });
+    // API keys are provided by the environment, potentially as a comma-separated list
+    const keys = (process.env.API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
+    const credits = "**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
 
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: contents,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.2,
-        }
-      });
-
-      let text = response.text || "**I couldn't find the answer in the provided study material.**";
-      
-      // Ensure the credits are present if the model forgets
-      const credits = "**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
-      if (!text.includes("Credits: Created by Dr. Savin")) {
-        text = text.trim() + "\n\n" + credits;
-      }
-      
-      return text;
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-      return "**I couldn't find the answer in the provided study material.**\n\n**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
+    if (keys.length === 0) {
+      return "**Service temporarily busy. Please try again later.**";
     }
+
+    const contents = history.map(msg => ({
+      role: msg.role === 'bot' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
+    
+    contents.push({
+      role: 'user',
+      parts: [{ text: prompt }]
+    });
+
+    // Try each API key sequentially (Fail-over silently)
+    for (const key of keys) {
+      try {
+        const ai = new GoogleGenAI({ apiKey: key });
+        
+        const response: GenerateContentResponse = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: contents,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            temperature: 0.2,
+          }
+        });
+
+        let text = response.text || "**I couldn't find the answer in the provided study material.**";
+        
+        // Ensure the credits are present at the end of every answer
+        if (!text.includes("Credits: Created by Dr. Savin")) {
+          text = text.trim() + "\n\n" + credits;
+        }
+        
+        return text;
+      } catch (error) {
+        // Silently try the next key if current one fails (e.g., quota exceeded, network error)
+        console.warn(`Key failover: attempting next available key...`);
+        continue;
+      }
+    }
+
+    // Fallback if all keys fail
+    return "**Service temporarily busy. Please try again later.**";
   }
 }
 

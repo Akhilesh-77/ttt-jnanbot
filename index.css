@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md;
+  }
+  
+  .dark .glass {
+    @apply bg-slate-900/70 backdrop-blur-md;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
