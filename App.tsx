@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, Theme, BotState, ActiveView } from './types';
 import { geminiService } from './services/geminiService';
@@ -26,7 +25,6 @@ const App: React.FC = () => {
     const lastClear = localStorage.getItem('jnan_last_clear');
     const now = new Date().getTime();
 
-    // Silent 24-hour auto-delete
     if (lastClear && now - parseInt(lastClear) > 86400000) {
       localStorage.removeItem('jnan_chat_history');
       localStorage.setItem('jnan_last_clear', now.toString());
@@ -58,10 +56,8 @@ const App: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  // Only auto-scroll when a new message arrives or bot starts/stops loading
-  // This allows manual scrolling immediately after the scroll command finishes
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 || botState === BotState.LOADING) {
       scrollToBottom();
     }
   }, [messages.length, botState]);
@@ -69,7 +65,6 @@ const App: React.FC = () => {
   const handleLogin = () => {
     localStorage.setItem('jnan_auth', 'true');
     setIsAuthenticated(true);
-    window.history.pushState(null, '', window.location.href);
   };
 
   const handleLogout = () => {
@@ -80,7 +75,6 @@ const App: React.FC = () => {
       setInput('');
       setIsMenuOpen(false);
       setActiveView('chat');
-      window.history.replaceState(null, '', window.location.href);
       window.location.reload();
     }
   };
@@ -127,9 +121,8 @@ const App: React.FC = () => {
     };
 
     const isFirstMessage = messages.length === 0;
-    let newHistory = [...messages, userMsg];
     
-    setMessages(newHistory);
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setBotState(BotState.LOADING);
 
@@ -141,7 +134,6 @@ const App: React.FC = () => {
             timestamp: new Date()
         };
         setMessages(prev => [...prev, welcome]);
-        newHistory = [...newHistory, welcome];
     }
 
     const botResponse = await geminiService.sendMessage(input, messages);
@@ -167,7 +159,7 @@ const App: React.FC = () => {
     return (
       <div className={`flex flex-col h-screen items-center justify-center p-6 text-center transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
         <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 mb-6 animate-bounce" />
-        <h1 className="text-3xl font-black mb-2">TTT JNAN ChatBot</h1>
+        <h1 className="text-3xl font-black mb-2 text-indigo-500">TTT JNAN ChatBot</h1>
         <p className="text-slate-400 uppercase tracking-widest text-xs font-bold mb-8">DCET ASPIRANT PORTAL</p>
         <button 
           onClick={handleLogin}
@@ -193,7 +185,7 @@ const App: React.FC = () => {
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transform transition-transform duration-500 ease-out glass shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-bold tracking-tight">JNAN Menu</h2>
+            <h2 className="text-xl font-bold tracking-tight text-indigo-500">JNAN Menu</h2>
             <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
