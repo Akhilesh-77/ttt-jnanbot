@@ -14,6 +14,16 @@ STRICT CONTENT RULES:
 4. Do NOT guess, do NOT use external internet, do NOT invent content.
 5. Prefer copying exact text from the source study material.
 
+MATH FORMATTING (CRITICAL):
+Mathematical content MUST display cleanly and accurately without technical markers.
+- ❌ Do NOT show dollar symbols like: $a^2 + b^2$
+- ❌ Do NOT show raw LaTeX.
+- ✔ Show equations exactly how they appear in textbooks.
+- Example: a² + b² = c²
+- Example: V = IR
+- Example: ∑x / n
+- Use proper Unicode math symbols, superscripts (²), subscripts (₁), fractions (½), powers, and notations that are clearly readable in plain text.
+
 FORMATTING RULES:
 - Use **bold ONLY for important or key parts** (words, definitions, or main concepts). Do NOT bold the entire answer.
 - Use inverted commas ONLY when necessary (definitions, exact quotes).

@@ -345,8 +345,8 @@ const App: React.FC = () => {
                       : 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-600/40'
                   }`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-[-30deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h15" />
                   </svg>
                 </button>
               </div>
