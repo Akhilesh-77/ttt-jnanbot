@@ -54,18 +54,21 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
+  // Only auto-scroll when a new message arrives or bot starts/stops loading
+  // This allows manual scrolling immediately after the scroll command finishes
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, botState]);
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length, botState]);
 
   const handleLogin = () => {
     localStorage.setItem('jnan_auth', 'true');
     setIsAuthenticated(true);
-    // Clear history to prevent back button
     window.history.pushState(null, '', window.location.href);
   };
 
@@ -77,7 +80,6 @@ const App: React.FC = () => {
       setInput('');
       setIsMenuOpen(false);
       setActiveView('chat');
-      // Replace state and reload to kill session
       window.history.replaceState(null, '', window.location.href);
       window.location.reload();
     }
@@ -91,7 +93,6 @@ const App: React.FC = () => {
     const index = messages.findIndex(m => m.id === id);
     if (index === -1) return;
 
-    // Remove all messages starting from the next one (bot's response)
     const updatedHistory = messages.slice(0, index);
     const updatedUserMsg: Message = { ...messages[index], content: newContent, timestamp: new Date() };
     
@@ -185,12 +186,10 @@ const App: React.FC = () => {
   return (
     <div className={`flex flex-col h-screen overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
-      {/* Sidebar Overlay */}
       {isMenuOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-opacity" onClick={() => setIsMenuOpen(false)} />
       )}
 
-      {/* Sidebar Menu */}
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transform transition-transform duration-500 ease-out glass shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-8">
@@ -248,7 +247,6 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main App Bar */}
       <header className="flex items-center justify-between py-4 px-6 glass border-b transition-all z-30">
         <div className="flex items-center space-x-3">
           <button 
@@ -259,7 +257,9 @@ const App: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <img src={ACADEMY_LOGO} alt="Academy Logo" className="h-8 md:h-10 object-contain hidden sm:block" />
+          <div className={`p-1.5 rounded-2xl border-2 transition-all hidden sm:flex items-center justify-center overflow-hidden ${theme === 'dark' ? 'border-white/40' : 'border-black'}`}>
+            <img src={ACADEMY_LOGO} alt="Academy Logo" className="h-7 md:h-9 object-contain" />
+          </div>
         </div>
 
         <button 
@@ -288,11 +288,10 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto relative px-4 md:px-0">
         {activeView === 'chat' ? (
           <>
-            <main className="flex-1 overflow-y-auto scrollbar-hide pt-8 pb-4 space-y-4">
+            <main className="flex-1 overflow-y-auto scroll-smooth pt-8 pb-4 space-y-4 scrollbar-hide">
               {messages.length === 0 && !input ? (
                 <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700">
                   <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 md:w-32 md:h-32 mb-6 drop-shadow-2xl animate-bounce" />
@@ -322,7 +321,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="h-1 w-full" />
             </main>
 
             <footer className="py-6 mt-auto">
@@ -345,8 +344,8 @@ const App: React.FC = () => {
                       : 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-600/40'
                   }`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-[-30deg]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h15" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </button>
               </div>
