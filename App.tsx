@@ -19,6 +19,7 @@ const App: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-sync history and handle 24h clear
   useEffect(() => {
     if (!isAuthenticated) return;
     const saved = localStorage.getItem('jnan_chat_history');
@@ -52,8 +53,11 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Robust scrolling that doesn't "lock"
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
   };
 
   useEffect(() => {
@@ -171,7 +175,7 @@ const App: React.FC = () => {
     );
   }
 
-  const filteredMessages = messages.filter(m => 
+  const filteredHistory = messages.filter(m => 
     m.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -182,11 +186,12 @@ const App: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 transition-opacity" onClick={() => setIsMenuOpen(false)} />
       )}
 
-      <aside className={`fixed left-0 top-0 h-full w-80 z-50 transform transition-transform duration-500 ease-out glass shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* Sidebar Navigation - Updated to solid background */}
+      <aside className={`fixed left-0 top-0 h-full w-80 z-50 transform transition-transform duration-500 ease-out bg-white dark:bg-[#0f0f0f] shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-xl font-bold tracking-tight text-indigo-500">JNAN Menu</h2>
-            <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full">
+            <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -199,7 +204,7 @@ const App: React.FC = () => {
               placeholder="Search history..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+              className="w-full pl-10 pr-4 py-3 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all"
             />
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -217,11 +222,11 @@ const App: React.FC = () => {
               <span>Ask Teachers</span>
             </button>
 
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-4">Recent History</p>
-            {filteredMessages.slice().reverse().map(m => (
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-4">Recent Conversations</p>
+            {filteredHistory.slice().reverse().map(m => (
               <div key={m.id} className="group flex items-center justify-between p-3.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-indigo-500/10 transition-colors">
                 <span className="text-xs font-semibold truncate w-48">{m.content.replace(/\*\*/g, '')}</span>
-                <button onClick={() => deleteMessage(m.id)} className="p-1 opacity-0 group-hover:opacity-100 text-red-500">
+                <button onClick={() => deleteMessage(m.id)} className="p-1 opacity-0 group-hover:opacity-100 text-red-500 transition-opacity">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -239,6 +244,7 @@ const App: React.FC = () => {
         </div>
       </aside>
 
+      {/* Main Header */}
       <header className="flex items-center justify-between py-4 px-6 glass border-b transition-all z-30">
         <div className="flex items-center space-x-3">
           <button 
@@ -249,6 +255,8 @@ const App: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+          
+          {/* Logo with Dynamic Outline */}
           <div className={`p-1.5 rounded-2xl border-2 transition-all hidden sm:flex items-center justify-center overflow-hidden ${theme === 'dark' ? 'border-white/40' : 'border-black'}`}>
             <img src={ACADEMY_LOGO} alt="Academy Logo" className="h-7 md:h-9 object-contain" />
           </div>
@@ -313,7 +321,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} className="h-1 w-full" />
+              <div ref={messagesEndRef} className="h-4 w-full" />
             </main>
 
             <footer className="py-6 mt-auto">
