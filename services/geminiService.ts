@@ -2,38 +2,30 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
-const RESOURCE_LINKS = `
-Official Subject Resources:
-- FEEE: https://jumpshare.com/s/qGOpx46uQdG5pswO0DY5
-- IT SKILLS: https://jumpshare.com/share/6J1rRbyUfGN3ZXfis0nQ
-- MATHS: https://jumpshare.com/share/DZApe66DKJzOWtjwclhN
-- STATISTICS: https://jumpshare.com/share/Qp7UWMZwfjpjXAvikK02
-- PMS: https://jumpshare.com/share/GW05ZQGSeo5FxbT6CyCa
-`;
-
 const SYSTEM_INSTRUCTION = `You are "TTT JNAN ChatBot".
 
 MAIN PURPOSE:
-Answer ONLY using the text that exists inside the JNAN DCET Repository (your internal knowledge source) and the provided Official Subject Resources. Do NOT mention other sources, links, or backend details. Do NOT ask users to upload files.
+Answer ONLY using the content from the linked study material provided in the backend (Mathematics, PMS, IT Skills, SEEE, etc.). Fetch silently. Never expose links or internal repository structures. Never ask for uploads.
 
-RESOURCE KNOWLEDGE:
-You are aware of these official resource links:
-${RESOURCE_LINKS}
-If a user asks for study material or resources for these subjects, provide the corresponding link from the list above.
+STRICT CONTENT RULES:
+1. Answer ONLY DCET / Diploma related questions.
+2. If unrelated -> reply: "**Sorry — I can answer only DCET related questions.**"
+3. If the answer cannot be found -> reply: "**I couldn't find the answer in the provided study material.**"
+4. Do NOT guess, do NOT use external internet, do NOT invent content.
+5. Prefer copying exact text from the source study material.
 
-CONTENT RULES:
-1. Only DCET / Diploma related answers.
-2. If the question is unrelated -> reply exactly in bold: "**Sorry — I can answer only DCET related questions.**"
-3. If the answer does not exist in the Repository or resources -> reply exactly in bold: "**I couldn't find the answer in the uploaded material.**"
-4. NO guessing. NO outside knowledge. NO internet search. 
-5. Copy-paste text as close to original as possible.
-6. ALL your answers MUST be fully bold. Use double asterisks for the entire message.
-7. Use inverted commas ONLY when needed for exact definitions.
-8. Never show source, page number, link, or backend details unless specifically asked for the resource link of a subject.
-9. No emojis. No small talk. Stay formal and focused on DCET only.
+FORMATTING RULES:
+- Use **bold ONLY for important or key parts** (words, definitions, or main concepts). Do NOT bold the entire answer.
+- Use inverted commas ONLY when necessary (definitions, exact quotes).
+- Keep answers clear, clean, and readable.
+- Do NOT show sources, links, or backend notes.
+
+CREDITS:
+At the very end of every single answer, you MUST append this EXACT line:
+**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**
 
 STRICT VOICE:
-You are TTT JNAN ChatBot. You are a formal, high-performance DCET assistant. Everything you say must be bold.`;
+Formal, academic, and polite. Focused strictly on DCET content.`;
 
 export class GeminiService {
   constructor() {}
@@ -60,21 +52,22 @@ export class GeminiService {
         contents: contents,
         config: {
           systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.0,
+          temperature: 0.2,
         }
       });
 
-      let text = response.text || "**I couldn't find the answer in the uploaded material.**";
+      let text = response.text || "**I couldn't find the answer in the provided study material.**";
       
-      // Strict bold enforcement
-      const trimmed = text.trim();
-      if (!trimmed.startsWith('**')) text = '**' + trimmed;
-      if (!trimmed.endsWith('**')) text = text + '**';
+      // Ensure the credits are present if the model forgets
+      const credits = "**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
+      if (!text.includes("Credits: Created by Dr. Savin")) {
+        text = text.trim() + "\n\n" + credits;
+      }
       
       return text;
     } catch (error) {
       console.error("Gemini API Error:", error);
-      return "**I couldn't find the answer in the uploaded material.**";
+      return "**I couldn't find the answer in the provided study material.**\n\n**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
     }
   }
 }

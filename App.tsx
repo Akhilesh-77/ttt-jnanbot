@@ -4,7 +4,6 @@ import { Message, Theme, BotState, ActiveView } from './types';
 import { geminiService } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
 import AskTeachers from './components/AskTeachers';
-import SubjectResources from './components/SubjectResources';
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://tttacademy.in/NOMS/JnanBot/files/images/static/chat_bot.png";
@@ -21,13 +20,13 @@ const App: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-delete logic and history sync
   useEffect(() => {
     if (!isAuthenticated) return;
     const saved = localStorage.getItem('jnan_chat_history');
     const lastClear = localStorage.getItem('jnan_last_clear');
     const now = new Date().getTime();
 
+    // Silent 24-hour auto-delete
     if (lastClear && now - parseInt(lastClear) > 86400000) {
       localStorage.removeItem('jnan_chat_history');
       localStorage.setItem('jnan_last_clear', now.toString());
@@ -45,6 +44,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (messages.length > 0) {
       localStorage.setItem('jnan_chat_history', JSON.stringify(messages));
+    } else {
+      localStorage.removeItem('jnan_chat_history');
     }
   }, [messages]);
 
@@ -64,7 +65,8 @@ const App: React.FC = () => {
   const handleLogin = () => {
     localStorage.setItem('jnan_auth', 'true');
     setIsAuthenticated(true);
-    window.history.replaceState(null, '', window.location.href);
+    // Clear history to prevent back button
+    window.history.pushState(null, '', window.location.href);
   };
 
   const handleLogout = () => {
@@ -74,8 +76,42 @@ const App: React.FC = () => {
       setMessages([]);
       setInput('');
       setIsMenuOpen(false);
-      // Replace state to prevent going back
+      setActiveView('chat');
+      // Replace state and reload to kill session
       window.history.replaceState(null, '', window.location.href);
+      window.location.reload();
+    }
+  };
+
+  const deleteMessage = (id: string) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
+  };
+
+  const editUserMessage = async (id: string, newContent: string) => {
+    const index = messages.findIndex(m => m.id === id);
+    if (index === -1) return;
+
+    // Remove all messages starting from the next one (bot's response)
+    const updatedHistory = messages.slice(0, index);
+    const updatedUserMsg: Message = { ...messages[index], content: newContent, timestamp: new Date() };
+    
+    const newContext = [...updatedHistory, updatedUserMsg];
+    setMessages(newContext);
+    setBotState(BotState.LOADING);
+
+    try {
+      const botResponse = await geminiService.sendMessage(newContent, updatedHistory);
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'bot',
+        content: botResponse,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMsg]);
+    } catch (error) {
+      console.error("Regeneration failed", error);
+    } finally {
+      setBotState(BotState.IDLE);
     }
   };
 
@@ -181,16 +217,6 @@ const App: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mb-6">
             <button 
-              onClick={() => { setActiveView('resources'); setIsMenuOpen(false); }}
-              className="w-full flex items-center space-x-3 p-4 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-600/20 hover:bg-emerald-600 hover:text-white transition-all font-bold"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span>Subject Resources</span>
-            </button>
-
-            <button 
               onClick={() => { setActiveView('ask-teachers'); setIsMenuOpen(false); }}
               className="w-full flex items-center space-x-3 p-4 bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-600/20 hover:bg-indigo-600 hover:text-white transition-all font-bold"
             >
@@ -204,7 +230,7 @@ const App: React.FC = () => {
             {filteredMessages.slice().reverse().map(m => (
               <div key={m.id} className="group flex items-center justify-between p-3.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-indigo-500/10 transition-colors">
                 <span className="text-xs font-semibold truncate w-48">{m.content.replace(/\*\*/g, '')}</span>
-                <button onClick={() => setMessages(prev => prev.filter(x => x.id !== m.id))} className="p-1 opacity-0 group-hover:opacity-100 text-red-500">
+                <button onClick={() => deleteMessage(m.id)} className="p-1 opacity-0 group-hover:opacity-100 text-red-500">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -275,7 +301,13 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={msg} isDarkMode={theme === 'dark'} />
+                  <ChatMessage 
+                    key={msg.id} 
+                    message={msg} 
+                    isDarkMode={theme === 'dark'} 
+                    onDelete={deleteMessage}
+                    onEdit={msg.role === 'user' ? editUserMessage : undefined}
+                  />
                 ))
               )}
               
@@ -321,13 +353,9 @@ const App: React.FC = () => {
               <p className="text-[9px] text-center text-slate-400 uppercase font-bold tracking-[0.2em] mt-3">Verified TTTJNAN CHATBOT • DR. SAVINA JP</p>
             </footer>
           </>
-        ) : activeView === 'ask-teachers' ? (
-          <div className="py-8 h-full overflow-y-auto scrollbar-hide">
-            <AskTeachers isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
-          </div>
         ) : (
           <div className="py-8 h-full overflow-y-auto scrollbar-hide">
-            <SubjectResources isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
+            <AskTeachers isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
           </div>
         )}
       </div>

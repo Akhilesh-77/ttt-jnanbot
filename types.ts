@@ -7,7 +7,7 @@ export interface Message {
 }
 
 export type Theme = 'light' | 'dark';
-export type ActiveView = 'chat' | 'ask-teachers' | 'resources';
+export type ActiveView = 'chat' | 'ask-teachers';
 
 export enum BotState {
   IDLE = 'IDLE',
