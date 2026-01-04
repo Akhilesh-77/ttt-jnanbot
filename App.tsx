@@ -5,6 +5,7 @@ import { geminiService } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
 import AskTeachers from './components/AskTeachers';
 import AboutTTT from './components/AboutTTT';
+import LoginPage from './components/LoginPage';
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png";
@@ -12,8 +13,11 @@ const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5m
 const SUBJECTS = ["Mathematics", "Statistics", "PMS", "IT Skills", "FEEE"];
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => localStorage.getItem('jnan_auth') === 'true');
+  // Authentication States
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => localStorage.getItem('jnan_is_logged_in') === 'true');
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'light');
+
+  // App UI States
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [botState, setBotState] = useState<BotState>(BotState.IDLE);
@@ -81,20 +85,12 @@ const App: React.FC = () => {
     }
   }, [messages.length, botState]);
 
-  const handleLogin = () => {
-    localStorage.setItem('jnan_auth', 'true');
-    setIsAuthenticated(true);
-  };
-
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to Logout?")) {
-      localStorage.clear();
+      localStorage.removeItem('jnan_is_logged_in');
       setIsAuthenticated(false);
-      setMessages([]);
-      setInput('');
       setIsMenuOpen(false);
       setActiveView('chat');
-      window.location.reload();
     }
   };
 
@@ -155,7 +151,6 @@ const App: React.FC = () => {
       });
     };
     reader.readAsDataURL(file);
-    // Reset input so the same file can be picked again if deleted
     e.target.value = '';
   };
 
@@ -211,19 +206,7 @@ const App: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return (
-      <div className={`flex flex-col h-[100dvh] items-center justify-center p-6 text-center transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-        <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 mb-6 rounded-3xl object-cover shadow-2xl" />
-        <h1 className="text-4xl font-black mb-2 text-indigo-500">TTT JNAN ChatBot</h1>
-        <p className="text-slate-400 uppercase tracking-widest text-sm font-bold mb-8">DCET ASPIRANT PORTAL</p>
-        <button 
-          onClick={handleLogin}
-          className="px-12 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all text-xl"
-        >
-          Enter ChatBot
-        </button>
-      </div>
-    );
+    return <LoginPage theme={theme} onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
 
   const filteredMessages = messages.filter(m => 
