@@ -46,13 +46,14 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent automatic prompt
+      // Prevent browser from showing automatic bar
       e.preventDefault();
-      // Stash event to trigger manually
+      // Save event to trigger manually later
       setDeferredPrompt(e);
     };
 
     const handleAppInstalled = () => {
+      // Set permanent install state
       localStorage.setItem('pwa_installed', 'true');
       setIsInstalled(true);
       setShowInstallBanner(false);
@@ -73,11 +74,13 @@ const App: React.FC = () => {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setIsInstalled(true);
       localStorage.setItem('pwa_installed', 'true');
+      setIsInstalled(true);
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+    } else {
+      setShowInstallBanner(false);
     }
-    setDeferredPrompt(null);
-    setShowInstallBanner(false);
   };
 
   const handleDismissInstall = () => {
@@ -263,12 +266,13 @@ const App: React.FC = () => {
     setActiveView('chat');
   };
 
-  // Logic to determine if install button should show
+  // Only show manual button if app isn't installed and the browser supports it
   const canShowInstallButton = !isInstalled && deferredPrompt !== null;
 
   if (!isAuthenticated) {
     return (
-      <div className={`transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      <div className={`transition-colors duration-300 min-h-screen ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        {/* Banner only appears if manual button was clicked */}
         {showInstallBanner && (
           <PWAInstallBanner 
             isDarkMode={theme === 'dark'} 
@@ -429,6 +433,7 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Manual Install Button in Header - disappears permanently after install */}
           {canShowInstallButton && (
             <button 
               onClick={triggerInstallUI}
@@ -468,16 +473,20 @@ const App: React.FC = () => {
         </div>
       </header>
 
+      {/* Global Install Banner - Shows when manual button is triggered */}
+      {!isInstalled && showInstallBanner && (
+        <div className="z-50 max-w-4xl w-full mx-auto">
+          <PWAInstallBanner 
+            isDarkMode={theme === 'dark'} 
+            onInstall={handleInstallApp} 
+            onDismiss={handleDismissInstall} 
+          />
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto relative px-4 md:px-0 overflow-hidden">
         {activeView === 'chat' ? (
           <>
-            {showInstallBanner && (
-              <PWAInstallBanner 
-                isDarkMode={theme === 'dark'} 
-                onInstall={handleInstallApp} 
-                onDismiss={handleDismissInstall} 
-              />
-            )}
             <main className="flex-1 overflow-y-auto scroll-stable pt-4 md:pt-8 pb-4 space-y-4 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700 p-4">
