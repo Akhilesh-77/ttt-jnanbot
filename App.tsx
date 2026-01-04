@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, Theme, BotState, ActiveView } from './types';
 import { geminiService } from './services/geminiService';
 import ChatMessage from './components/ChatMessage';
 import AskTeachers from './components/AskTeachers';
+import AboutTTT from './components/AboutTTT';
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://tttacademy.in/NOMS/JnanBot/files/images/static/chat_bot.png";
@@ -19,10 +21,22 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<ActiveView>('chat');
   
+  // Name Personalization State
+  const [userName, setUserName] = useState<string | null>(() => localStorage.getItem('jnan_user_name'));
+  const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+  const [tempName, setTempName] = useState(userName || '');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
+
+    // Check if we should prompt for name
+    const promptSeen = localStorage.getItem('jnan_prompt_seen');
+    if (!userName && !promptSeen) {
+      setIsNameModalOpen(true);
+    }
+
     const saved = localStorage.getItem('jnan_chat_history');
     const lastClear = localStorage.getItem('jnan_last_clear');
     const now = new Date().getTime();
@@ -52,7 +66,6 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Fluid scrolling: User can always scroll manually
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
@@ -80,6 +93,19 @@ const App: React.FC = () => {
       setActiveView('chat');
       window.location.reload();
     }
+  };
+
+  const handleSaveName = () => {
+    const val = tempName.trim();
+    if (val) {
+      setUserName(val);
+      localStorage.setItem('jnan_user_name', val);
+    } else {
+      setUserName(null);
+      localStorage.removeItem('jnan_user_name');
+    }
+    localStorage.setItem('jnan_prompt_seen', 'true');
+    setIsNameModalOpen(false);
   };
 
   const deleteMessage = (id: string) => {
@@ -142,7 +168,6 @@ const App: React.FC = () => {
 
   const handleSubjectTab = (subject: string) => {
     const prefix = `In ${subject}: `;
-    // Remove any existing subject prefix if present
     let currentInput = input;
     SUBJECTS.forEach(s => {
       const oldPrefix = `In ${s}: `;
@@ -183,6 +208,40 @@ const App: React.FC = () => {
   return (
     <div className={`flex flex-col h-[100dvh] overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
+      {/* Name Personalization Popup */}
+      {isNameModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNameModalOpen(false)}></div>
+          <div className="relative bg-white dark:bg-slate-900 w-full max-w-[320px] p-6 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold mb-1">Enter your name</h3>
+            <p className="text-xs text-slate-500 mb-4">How should the JNAN Bot greet you?</p>
+            <input 
+              type="text" 
+              value={tempName} 
+              onChange={(e) => setTempName(e.target.value)}
+              placeholder="Your name"
+              className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 mb-4"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+            />
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => { setIsNameModalOpen(false); localStorage.setItem('jnan_prompt_seen', 'true'); }}
+                className="flex-1 py-2 text-sm font-semibold text-slate-500 hover:text-slate-700"
+              >
+                Skip
+              </button>
+              <button 
+                onClick={handleSaveName}
+                className="flex-1 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMenuOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setIsMenuOpen(false)} />
       )}
@@ -191,11 +250,24 @@ const App: React.FC = () => {
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-bold tracking-tight text-indigo-500">JNAN Menu</h2>
-            <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            
+            <div className="flex items-center space-x-1">
+              <button 
+                onClick={() => { setIsNameModalOpen(true); setTempName(userName || ''); }}
+                className="p-2 text-slate-400 hover:text-indigo-500 transition-colors"
+                title="Edit Name"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+              
+              <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="relative mb-6">
@@ -214,7 +286,7 @@ const App: React.FC = () => {
           <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4 mb-6">
             <button 
               onClick={() => { setActiveView('ask-teachers'); setIsMenuOpen(false); }}
-              className="w-full flex items-center space-x-3 p-4 bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-600/20 hover:bg-indigo-600 hover:text-white transition-all font-bold text-base"
+              className="w-full flex items-center space-x-3 p-4 bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-600/20 hover:bg-indigo-600 hover:text-white transition-all font-bold text-base shadow-sm"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -235,12 +307,24 @@ const App: React.FC = () => {
             ))}
           </div>
 
-          <button onClick={handleLogout} className="w-full flex items-center justify-center space-x-2 py-3.5 bg-red-600/10 text-red-600 rounded-xl font-bold text-base hover:bg-red-600 hover:text-white transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>Logout</span>
-          </button>
+          <div className="mt-auto space-y-2">
+            <button 
+              onClick={() => { setActiveView('about'); setIsMenuOpen(false); }}
+              className="w-full flex items-center justify-center space-x-2 py-3 bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-base hover:bg-indigo-600 hover:text-white transition-all border border-indigo-600/20"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>About TTT</span>
+            </button>
+
+            <button onClick={handleLogout} className="w-full flex items-center justify-center space-x-2 py-3.5 bg-red-600/10 text-red-600 rounded-xl font-bold text-base hover:bg-red-600 hover:text-white transition-all">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -294,7 +378,11 @@ const App: React.FC = () => {
                 <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700 p-4">
                   <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 md:w-36 md:h-36 mb-6 drop-shadow-2xl animate-bounce" />
                   <h2 className="text-2xl md:text-4xl font-black tracking-tight mb-2">Ask to TTT JnanBot 👋</h2>
-                  <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs md:text-sm">Hey DCET ASPIRANT! How can I help you?</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs md:text-sm">
+                    {userName 
+                      ? `Hey ${userName}! How can I help you with DCET?` 
+                      : "Hey DCET ASPIRANT! How can I help you?"}
+                  </p>
                 </div>
               ) : (
                 messages.map((msg) => (
@@ -368,9 +456,13 @@ const App: React.FC = () => {
               <p className="text-[9px] md:text-[10px] text-center text-slate-400 uppercase font-bold tracking-[0.2em] mt-3 pb-1 md:pb-0">Verified TTTJNAN CHATBOT • DR. SAVINA JP</p>
             </footer>
           </>
-        ) : (
+        ) : activeView === 'ask-teachers' ? (
           <div className="py-4 md:py-8 h-full overflow-y-auto scroll-stable scrollbar-hide">
             <AskTeachers isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
+          </div>
+        ) : (
+          <div className="py-4 md:py-8 h-full overflow-y-auto scroll-stable scrollbar-hide">
+            <AboutTTT isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
           </div>
         )}
       </div>

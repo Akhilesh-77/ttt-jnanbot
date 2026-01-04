@@ -29,17 +29,39 @@ const AskTeachers: React.FC<AskTeachersProps> = ({ isDarkMode, onBack }) => {
 
   const selectedTeacher = TEACHERS[selectedTeacherIndex];
 
-  const handleGmail = () => {
+  const handleGmail = async () => {
     if (!doubt.trim()) return;
-    const subject = encodeURIComponent("DCET Student Doubt - TTT JNAN");
-    const body = encodeURIComponent(doubt);
-    window.open(`mailto:${selectedTeacher.email}?subject=${subject}&body=${body}`);
+    const subject = "Ask TTT JnanBot Doubt";
+    
+    // If image exists and sharing is supported (Mobile/Modern Browsers), use Web Share for true attachment
+    if (image && navigator.canShare && navigator.canShare({ files: [image] })) {
+      try {
+        await navigator.share({
+          files: [image],
+          title: subject,
+          text: `Teacher: ${selectedTeacher.name}\nEmail: ${selectedTeacher.email}\n\nDoubt: ${doubt}`,
+        });
+        return;
+      } catch (err) {
+        console.warn("Share failed, falling back to mailto");
+      }
+    }
+
+    // Fallback: Mailto with instruction if image exists
+    const bodyNote = image ? `\n\n[PLEASE ATTACH THE IMAGE: ${image.name} MANUALLY]` : "";
+    const body = encodeURIComponent(doubt + bodyNote);
+    window.open(`mailto:${selectedTeacher.email}?subject=${encodeURIComponent(subject)}&body=${body}`);
   };
 
   const handleWhatsApp = () => {
     if (!doubt.trim()) return;
-    const text = encodeURIComponent(`*Doubt from TTT JNAN App*\n\n${doubt}`);
-    window.open(`https://wa.me/${selectedTeacher.phone}?text=${text}`);
+    
+    let text = `*Doubt from TTT JNAN App*\n\n${doubt}`;
+    if (image) {
+      text += `\n\n_Please attach the image here again. For security reasons, WhatsApp does not allow images to be attached automatically._`;
+    }
+    
+    window.open(`https://wa.me/${selectedTeacher.phone}?text=${encodeURIComponent(text)}`);
   };
 
   return (
@@ -54,7 +76,6 @@ const AskTeachers: React.FC<AskTeachersProps> = ({ isDarkMode, onBack }) => {
       </div>
 
       <div className={`flex flex-col p-6 rounded-3xl glass border shadow-xl mb-6 transition-all ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-        {/* TEACHER SELECTOR SECTION */}
         <div className="mb-6">
           <label className="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-2 block">Select Teacher</label>
           <div className={`border rounded-2xl overflow-hidden ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
@@ -78,7 +99,7 @@ const AskTeachers: React.FC<AskTeachersProps> = ({ isDarkMode, onBack }) => {
             </button>
 
             {isExpanded && (
-              <div className="border-t dark:border-white/10 border-black/10 divide-y dark:divide-white/5 divide-black/5">
+              <div className="border-t dark:border-white/10 border-black/10 divide-y dark:divide-white/5 divide-black/5 max-h-60 overflow-y-auto scrollbar-hide">
                 {TEACHERS.map((teacher, index) => (
                   <button
                     key={index}
@@ -129,7 +150,9 @@ const AskTeachers: React.FC<AskTeachersProps> = ({ isDarkMode, onBack }) => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span className="text-sm font-medium">{image ? image.name : 'Tap to select an image'}</span>
+              <span className="text-sm font-medium text-center truncate w-full px-2">
+                {image ? image.name : 'Tap to select an image'}
+              </span>
             </label>
           </div>
         </div>
