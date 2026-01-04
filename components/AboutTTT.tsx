@@ -106,7 +106,7 @@ const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
       </div>
 
       <div className="space-y-4 mb-12">
-        <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 ml-1">Community & Socials</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-indigo-500 ml-1">FOLLOW US ON</p>
         <div className="grid grid-cols-2 xs:grid-cols-4 gap-3">
           <button onClick={() => openLink(TTT_LINKS.youtube)} className="flex flex-col items-center justify-center p-4 rounded-2xl bg-red-600/10 text-red-600 transition-all hover:bg-red-600 hover:text-white group">
             <img src={TTT_ICONS.youtube} alt="YouTube" className="h-6 w-6 mb-2 object-contain" />
