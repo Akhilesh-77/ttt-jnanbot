@@ -6,6 +6,7 @@ import ChatMessage from './components/ChatMessage';
 import AskTeachers from './components/AskTeachers';
 import AboutTTT from './components/AboutTTT';
 import LoginPage from './components/LoginPage';
+import PWAInstallBanner from './components/PWAInstallBanner';
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png";
@@ -16,6 +17,10 @@ const App: React.FC = () => {
   // Authentication States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => localStorage.getItem('jnan_is_logged_in') === 'true');
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'light');
+
+  // PWA Install States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
 
   // App UI States
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,6 +40,46 @@ const App: React.FC = () => {
   const [tempName, setTempName] = useState(userName || '');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Check if user has already dismissed it in this session
+      const isDismissed = sessionStorage.getItem('jnan_install_dismissed');
+      if (!isDismissed) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    
+    // Show the install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    
+    // We've used the prompt, and can't use it again, throw it away
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
+
+  const handleDismissInstall = () => {
+    setShowInstallBanner(false);
+    sessionStorage.setItem('jnan_install_dismissed', 'true');
+  };
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -380,6 +425,13 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto relative px-4 md:px-0 overflow-hidden">
         {activeView === 'chat' ? (
           <>
+            {showInstallBanner && (
+              <PWAInstallBanner 
+                isDarkMode={theme === 'dark'} 
+                onInstall={handleInstallApp} 
+                onDismiss={handleDismissInstall} 
+              />
+            )}
             <main className="flex-1 overflow-y-auto scroll-stable pt-4 md:pt-8 pb-4 space-y-4 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700 p-4">
