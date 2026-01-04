@@ -67,7 +67,7 @@ const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
 
       <div className="flex flex-col items-center text-center mb-10">
         <div className={`w-24 h-24 mb-6 rounded-3xl overflow-hidden border-2 flex items-center justify-center ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-black/5 bg-black/5'}`}>
-          <img src="https://tttacademy.in/NOMS/files/images/static/Main-logo.png" alt="TTT Logo" className="w-16 h-16 object-contain" />
+          <img src="https://tttacademics.com/logos/x-icon.png" alt="TTT Logo" className="w-16 h-16 object-contain" />
         </div>
         <h3 className="text-2xl font-black text-indigo-500 mb-2">TTT Academy – DCET Coaching</h3>
         <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Learn more about TTT Academy and our DCET resources.</p>
@@ -84,7 +84,7 @@ const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
           </div>
           <div className="text-left">
             <span className="block font-bold text-sm">Official Website</span>
-            <span className="text-[10px] text-slate-400">tttacademy.in</span>
+            <span className="text-[10px] text-slate-400">https://tttacademics.com/</span>
           </div>
         </button>
 
