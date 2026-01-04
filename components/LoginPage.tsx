@@ -5,12 +5,14 @@ import { validateCredentials } from '../config/credentials';
 interface LoginPageProps {
   theme: 'light' | 'dark';
   onLoginSuccess: () => void;
+  showInstallButton: boolean;
+  onInstallClick: () => void;
 }
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png";
 
-const LoginPage: React.FC<LoginPageProps> = ({ theme, onLoginSuccess }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ theme, onLoginSuccess, showInstallButton, onInstallClick }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -100,6 +102,20 @@ const LoginPage: React.FC<LoginPageProps> = ({ theme, onLoginSuccess }) => {
               Login to JNAN
             </button>
           </form>
+
+          {showInstallButton && (
+            <div className="mt-6 border-t dark:border-slate-800 border-slate-100 pt-6">
+              <button 
+                onClick={onInstallClick}
+                className="w-full flex items-center justify-center space-x-2 py-3 border-2 border-dashed border-indigo-500/30 text-indigo-500 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-500/5 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Install JNAN App</span>
+              </button>
+            </div>
+          )}
         </div>
         
         <p className="mt-8 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] text-center">Verified TTT Academy Learning Portal</p>

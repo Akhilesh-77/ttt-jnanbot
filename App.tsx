@@ -21,6 +21,9 @@ const App: React.FC = () => {
   // PWA Install States
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isInstalled, setIsInstalled] = useState<boolean>(() => {
+    return window.matchMedia('(display-mode: standalone)').matches || localStorage.getItem('pwa_installed') === 'true';
+  });
 
   // App UI States
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,42 +46,52 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
+      // Prevent automatic prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later.
+      // Stash event to trigger manually
       setDeferredPrompt(e);
-      // Check if user has already dismissed it in this session
-      const isDismissed = sessionStorage.getItem('jnan_install_dismissed');
-      if (!isDismissed) {
-        setShowInstallBanner(true);
-      }
+    };
+
+    const handleAppInstalled = () => {
+      localStorage.setItem('pwa_installed', 'true');
+      setIsInstalled(true);
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
   const handleInstallApp = async () => {
     if (!deferredPrompt) return;
-    
-    // Show the install prompt
     deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    
-    // We've used the prompt, and can't use it again, throw it away
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+      localStorage.setItem('pwa_installed', 'true');
+    }
     setDeferredPrompt(null);
     setShowInstallBanner(false);
   };
 
   const handleDismissInstall = () => {
     setShowInstallBanner(false);
-    sessionStorage.setItem('jnan_install_dismissed', 'true');
+  };
+
+  const triggerInstallUI = () => {
+    if (deferredPrompt) {
+      setShowInstallBanner(true);
+    } else if (isInstalled) {
+      alert("TTT JNAN is already installed!");
+    } else {
+      alert("App installation is not available in your current browser.");
+    }
   };
 
   useEffect(() => {
@@ -250,8 +263,27 @@ const App: React.FC = () => {
     setActiveView('chat');
   };
 
+  // Logic to determine if install button should show
+  const canShowInstallButton = !isInstalled && deferredPrompt !== null;
+
   if (!isAuthenticated) {
-    return <LoginPage theme={theme} onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return (
+      <div className={`transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        {showInstallBanner && (
+          <PWAInstallBanner 
+            isDarkMode={theme === 'dark'} 
+            onInstall={handleInstallApp} 
+            onDismiss={handleDismissInstall} 
+          />
+        )}
+        <LoginPage 
+          theme={theme} 
+          onLoginSuccess={() => setIsAuthenticated(true)} 
+          showInstallButton={canShowInstallButton}
+          onInstallClick={triggerInstallUI}
+        />
+      </div>
+    );
   }
 
   const filteredMessages = messages.filter(m => 
@@ -396,30 +428,44 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <button 
-          onClick={startNewChat}
-          className="flex items-center space-x-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-base shadow-lg shadow-indigo-600/20 hover:scale-105 active:scale-95 transition-all"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden xs:inline">New Chat</span>
-        </button>
-
-        <button 
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className={`p-2.5 rounded-xl border transition-all ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-white border-slate-100 text-slate-600'}`}
-        >
-          {theme === 'light' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 9H3m3.343-5.657l-.707.707m12.728 12.728l-.707.707M6.343 17.657l-.707-.707M17.657 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
+        <div className="flex items-center space-x-2">
+          {canShowInstallButton && (
+            <button 
+              onClick={triggerInstallUI}
+              className="hidden xs:flex items-center space-x-2 px-4 py-2.5 border-2 border-indigo-600 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-600 hover:text-white transition-all mr-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Install App</span>
+            </button>
           )}
-        </button>
+
+          <button 
+            onClick={startNewChat}
+            className="flex items-center space-x-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-base shadow-lg shadow-indigo-600/20 hover:scale-105 active:scale-95 transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="hidden xs:inline">New Chat</span>
+          </button>
+
+          <button 
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className={`p-2.5 rounded-xl border transition-all ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-yellow-400' : 'bg-white border-slate-100 text-slate-600'}`}
+          >
+            {theme === 'light' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 9H3m3.343-5.657l-.707.707m12.728 12.728l-.707.707M6.343 17.657l-.707-.707M17.657 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto relative px-4 md:px-0 overflow-hidden">
