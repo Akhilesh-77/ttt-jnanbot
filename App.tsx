@@ -7,6 +7,8 @@ import AskTeachers from './components/AskTeachers';
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
 const BOT_ICON = "https://tttacademy.in/NOMS/JnanBot/files/images/static/chat_bot.png";
 
+const SUBJECTS = ["Mathematics", "Statistics", "PMS", "IT Skills", "FEEE"];
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => localStorage.getItem('jnan_auth') === 'true');
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'light');
@@ -51,7 +53,6 @@ const App: React.FC = () => {
   }, [theme]);
 
   // Fluid scrolling: User can always scroll manually
-  // Using behavior 'auto' to prevent smooth-scroll thread locking during DOM mutations
   const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
@@ -60,7 +61,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (messages.length > 0 || botState === BotState.LOADING) {
-      // Auto-scroll on new content, but allow user manual control
       scrollToBottom();
     }
   }, [messages.length, botState]);
@@ -140,6 +140,20 @@ const App: React.FC = () => {
     setBotState(BotState.IDLE);
   };
 
+  const handleSubjectTab = (subject: string) => {
+    const prefix = `In ${subject}: `;
+    // Remove any existing subject prefix if present
+    let currentInput = input;
+    SUBJECTS.forEach(s => {
+      const oldPrefix = `In ${s}: `;
+      if (currentInput.startsWith(oldPrefix)) {
+        currentInput = currentInput.slice(oldPrefix.length);
+      }
+    });
+    
+    setInput(prefix + currentInput);
+  };
+
   const startNewChat = () => {
     setMessages([]);
     setInput('');
@@ -148,7 +162,7 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className={`flex flex-col h-screen items-center justify-center p-6 text-center transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      <div className={`flex flex-col h-[100dvh] items-center justify-center p-6 text-center transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
         <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 mb-6 animate-bounce" />
         <h1 className="text-4xl font-black mb-2 text-indigo-500">TTT JNAN ChatBot</h1>
         <p className="text-slate-400 uppercase tracking-widest text-sm font-bold mb-8">DCET ASPIRANT PORTAL</p>
@@ -167,13 +181,12 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`flex flex-col h-screen overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`flex flex-col h-[100dvh] overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
       {isMenuOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity" onClick={() => setIsMenuOpen(false)} />
       )}
 
-      {/* SOLID SIDE MENU - Fixed Bug 2 by ensuring menu-solid class is applied without overrides */}
       <aside className={`fixed left-0 top-0 h-full w-80 z-50 transform transition-transform duration-500 ease-out menu-solid shadow-2xl ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-8">
@@ -276,13 +289,12 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto relative px-4 md:px-0 overflow-hidden">
         {activeView === 'chat' ? (
           <>
-            {/* Bug 1 Fix: Stable scroll container without scroll-smooth behavior to prevent UI locks */}
-            <main className="flex-1 overflow-y-auto scroll-stable pt-8 pb-4 space-y-4 scrollbar-hide">
-              {messages.length === 0 && !input ? (
-                <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700">
-                  <img src={BOT_ICON} alt="Bot Icon" className="w-28 h-28 md:w-36 md:h-36 mb-6 drop-shadow-2xl animate-bounce" />
-                  <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-2">Ask to TTT JnanBot 👋</h2>
-                  <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-sm">Hey DCET ASPIRANT! How can I help you?</p>
+            <main className="flex-1 overflow-y-auto scroll-stable pt-4 md:pt-8 pb-4 space-y-4 scrollbar-hide">
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700 p-4">
+                  <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 md:w-36 md:h-36 mb-6 drop-shadow-2xl animate-bounce" />
+                  <h2 className="text-2xl md:text-4xl font-black tracking-tight mb-2">Ask to TTT JnanBot 👋</h2>
+                  <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs md:text-sm">Hey DCET ASPIRANT! How can I help you?</p>
                 </div>
               ) : (
                 messages.map((msg) => (
@@ -297,8 +309,8 @@ const App: React.FC = () => {
               )}
               
               {botState === BotState.LOADING && (
-                <div className="flex flex-col items-start mb-8 animate-pulse">
-                  <div className={`p-5 rounded-2xl rounded-tl-none ${theme === 'dark' ? 'bg-slate-800' : 'bg-white border border-slate-100'}`}>
+                <div className="flex flex-col items-start mb-8 animate-pulse px-4">
+                  <div className={`p-4 rounded-2xl rounded-tl-none ${theme === 'dark' ? 'bg-slate-800' : 'bg-white border border-slate-100'}`}>
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
@@ -307,41 +319,57 @@ const App: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} className="h-6 w-full" />
+              <div ref={messagesEndRef} className="h-4 w-full" />
             </main>
 
-            <footer className="flex-none py-6 mt-auto">
-              <div className="p-[2px] rounded-3xl bg-gradient-to-r from-[#9b5cff] to-[#c77dff] shadow-xl focus-within:shadow-[0_0_15px_rgba(155,92,255,0.5)] transition-shadow">
-                <div className={`relative group rounded-[22px] glass flex flex-col transition-all ${theme === 'dark' ? 'bg-slate-900/90' : 'bg-white/90'}`}>
+            <footer className="flex-none py-3 md:py-6 mt-auto">
+              <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3 px-1 overflow-x-auto scrollbar-hide whitespace-nowrap pb-1">
+                {SUBJECTS.map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => handleSubjectTab(sub)}
+                    className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold border transition-all ${
+                      input.startsWith(`In ${sub}: `)
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                        : 'bg-indigo-600/10 text-indigo-600 border-indigo-600/20 hover:bg-indigo-600/20'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-[2px] rounded-2xl md:rounded-3xl bg-gradient-to-r from-[#9b5cff] to-[#c77dff] shadow-xl focus-within:shadow-[0_0_15px_rgba(155,92,255,0.4)] transition-shadow">
+                <div className={`relative group rounded-[20px] md:rounded-[22px] glass flex flex-col transition-all ${theme === 'dark' ? 'bg-slate-900/95' : 'bg-white/95'}`}>
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                     placeholder="Ask any DCET related doubt..."
-                    className="w-full bg-transparent border-none focus:ring-0 text-[15px] md:text-[17px] py-4 px-6 resize-none max-h-40 min-h-[64px] leading-relaxed scrollbar-hide"
+                    className="w-full bg-transparent border-none focus:ring-0 text-[14px] md:text-[17px] py-3.5 md:py-4 px-5 md:px-6 resize-none max-h-32 md:max-h-40 min-h-[56px] md:min-h-[64px] leading-relaxed scrollbar-hide"
                     rows={1}
                     disabled={botState === BotState.LOADING}
                   />
                   <button
                     onClick={handleSend}
                     disabled={!input.trim() || botState === BotState.LOADING}
-                    className={`absolute right-3 bottom-3 p-3.5 rounded-2xl transition-all shadow-xl ${
+                    className={`absolute right-2.5 bottom-2.5 p-2.5 md:p-3.5 rounded-xl md:rounded-2xl transition-all shadow-lg ${
                       !input.trim() || botState === BotState.LOADING
                         ? 'bg-slate-200 text-slate-400 dark:bg-slate-800'
-                        : 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-600/40'
+                        : 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-600/30'
                     }`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-center text-slate-400 uppercase font-bold tracking-[0.2em] mt-3">Verified TTTJNAN CHATBOT • DR. SAVINA JP</p>
+              <p className="text-[9px] md:text-[10px] text-center text-slate-400 uppercase font-bold tracking-[0.2em] mt-3 pb-1 md:pb-0">Verified TTTJNAN CHATBOT • DR. SAVINA JP</p>
             </footer>
           </>
         ) : (
-          <div className="py-8 h-full overflow-y-auto scroll-stable scrollbar-hide">
+          <div className="py-4 md:py-8 h-full overflow-y-auto scroll-stable scrollbar-hide">
             <AskTeachers isDarkMode={theme === 'dark'} onBack={() => setActiveView('chat')} />
           </div>
         )}

@@ -9,7 +9,7 @@ interface Teacher {
 }
 
 const TEACHERS: Teacher[] = [
-  { name: "Dr. Savina JP", email: "savinajp@tttacademy.in", phone: "6363027032", specialization: "Mathematics / PMS" },
+  { name: "Dr. Savina JP", email: "savinajp@tttacademy.in", phone: "9986869966", specialization: "Mathematics" },
   { name: "Prof. Akhilesh U", email: "akhilesh27u@gmail.com", phone: "6363027032", specialization: "IT Skills" },
   { name: "Prof. Ravi Kumar", email: "ravi.kumar@tttacademy.in", phone: "6363027032", specialization: "FEEE" },
   { name: "Prof. Shwetha S", email: "shwetha.s@tttacademy.in", phone: "6363027032", specialization: "Statistics" },
