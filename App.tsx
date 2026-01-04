@@ -7,7 +7,7 @@ import AskTeachers from './components/AskTeachers';
 import AboutTTT from './components/AboutTTT';
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
-const BOT_ICON = "https://tttacademy.in/NOMS/JnanBot/files/images/static/chat_bot.png";
+const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png";
 
 const SUBJECTS = ["Mathematics", "Statistics", "PMS", "IT Skills", "FEEE"];
 
@@ -21,6 +21,10 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<ActiveView>('chat');
   
+  // Image Understanding States
+  const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Name Personalization State
   const [userName, setUserName] = useState<string | null>(() => localStorage.getItem('jnan_user_name'));
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
@@ -31,7 +35,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Check if we should prompt for name
     const promptSeen = localStorage.getItem('jnan_prompt_seen');
     if (!userName && !promptSeen) {
       setIsNameModalOpen(true);
@@ -139,21 +142,42 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = (reader.result as string).split(',')[1];
+      setSelectedImage({
+        data: base64String,
+        mimeType: file.type
+      });
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be picked again if deleted
+    e.target.value = '';
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || botState === BotState.LOADING) return;
+    if ((!input.trim() && !selectedImage) || botState === BotState.LOADING) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
-      timestamp: new Date()
+      content: input || (selectedImage ? "[Attached Image Analysis]" : ""),
+      timestamp: new Date(),
+      image: selectedImage || undefined
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const currentInput = input;
+    const currentImage = selectedImage;
     setInput('');
+    setSelectedImage(null);
     setBotState(BotState.LOADING);
 
-    const botResponse = await geminiService.sendMessage(input, messages);
+    const botResponse = await geminiService.sendMessage(currentInput || "Analyze this image for DCET content.", messages, currentImage || undefined);
     
     const botMsg: Message = {
       id: (Date.now() + 1).toString(),
@@ -182,13 +206,14 @@ const App: React.FC = () => {
   const startNewChat = () => {
     setMessages([]);
     setInput('');
+    setSelectedImage(null);
     setActiveView('chat');
   };
 
   if (!isAuthenticated) {
     return (
       <div className={`flex flex-col h-[100dvh] items-center justify-center p-6 text-center transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-        <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 mb-6 animate-bounce" />
+        <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 mb-6 rounded-3xl object-cover shadow-2xl" />
         <h1 className="text-4xl font-black mb-2 text-indigo-500">TTT JNAN ChatBot</h1>
         <p className="text-slate-400 uppercase tracking-widest text-sm font-bold mb-8">DCET ASPIRANT PORTAL</p>
         <button 
@@ -208,7 +233,6 @@ const App: React.FC = () => {
   return (
     <div className={`flex flex-col h-[100dvh] overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
-      {/* Name Personalization Popup */}
       {isNameModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNameModalOpen(false)}></div>
@@ -376,7 +400,7 @@ const App: React.FC = () => {
             <main className="flex-1 overflow-y-auto scroll-stable pt-4 md:pt-8 pb-4 space-y-4 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center animate-in zoom-in duration-700 p-4">
-                  <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 md:w-36 md:h-36 mb-6 drop-shadow-2xl animate-bounce" />
+                  <img src={BOT_ICON} alt="Bot Icon" className="w-24 h-24 md:w-36 md:h-36 mb-6 drop-shadow-2xl animate-bounce rounded-3xl object-cover" />
                   <h2 className="text-2xl md:text-4xl font-black tracking-tight mb-2">Ask to TTT JnanBot 👋</h2>
                   <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs md:text-sm">
                     {userName 
@@ -411,6 +435,27 @@ const App: React.FC = () => {
             </main>
 
             <footer className="flex-none py-3 md:py-6 mt-auto">
+              {/* Image Preview Container */}
+              {selectedImage && (
+                <div className="px-4 mb-4 animate-in slide-in-from-bottom-4">
+                  <div className="relative inline-block group">
+                    <img 
+                      src={`data:${selectedImage.mimeType};base64,${selectedImage.data}`} 
+                      className="h-20 w-20 object-cover rounded-xl border-2 border-indigo-500 shadow-lg" 
+                      alt="Selected preview"
+                    />
+                    <button 
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:scale-110 transition-transform"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3 px-1 overflow-x-auto scrollbar-hide whitespace-nowrap pb-1">
                 {SUBJECTS.map((sub) => (
                   <button
@@ -428,21 +473,41 @@ const App: React.FC = () => {
               </div>
 
               <div className="p-[2px] rounded-2xl md:rounded-3xl bg-gradient-to-r from-[#9b5cff] to-[#c77dff] shadow-xl focus-within:shadow-[0_0_15px_rgba(155,92,255,0.4)] transition-shadow">
-                <div className={`relative group rounded-[20px] md:rounded-[22px] glass flex flex-col transition-all ${theme === 'dark' ? 'bg-slate-900/95' : 'bg-white/95'}`}>
+                <div className={`relative group rounded-[20px] md:rounded-[22px] glass flex items-center transition-all ${theme === 'dark' ? 'bg-slate-900/95' : 'bg-white/95'}`}>
+                  {/* Image Upload Icon - Left Side */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageUpload} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={botState === BotState.LOADING}
+                    className="p-3.5 ml-1.5 text-indigo-500 hover:scale-110 active:scale-95 transition-all"
+                    title="Upload Image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                     placeholder="Ask any DCET related doubt..."
-                    className="w-full bg-transparent border-none focus:ring-0 text-[14px] md:text-[17px] py-3.5 md:py-4 px-5 md:px-6 resize-none max-h-32 md:max-h-40 min-h-[56px] md:min-h-[64px] leading-relaxed scrollbar-hide"
+                    className="w-full bg-transparent border-none focus:ring-0 text-[14px] md:text-[17px] py-3.5 md:py-4 px-2 md:px-3 resize-none max-h-32 md:max-h-40 min-h-[56px] md:min-h-[64px] leading-relaxed scrollbar-hide"
                     rows={1}
                     disabled={botState === BotState.LOADING}
                   />
+                  
                   <button
                     onClick={handleSend}
-                    disabled={!input.trim() || botState === BotState.LOADING}
-                    className={`absolute right-2.5 bottom-2.5 p-2.5 md:p-3.5 rounded-xl md:rounded-2xl transition-all shadow-lg ${
-                      !input.trim() || botState === BotState.LOADING
+                    disabled={(!input.trim() && !selectedImage) || botState === BotState.LOADING}
+                    className={`mr-2.5 p-2.5 md:p-3.5 rounded-xl md:rounded-2xl transition-all shadow-lg ${
+                      (!input.trim() && !selectedImage) || botState === BotState.LOADING
                         ? 'bg-slate-200 text-slate-400 dark:bg-slate-800'
                         : 'bg-indigo-600 text-white hover:scale-105 active:scale-95 shadow-indigo-600/30'
                     }`}

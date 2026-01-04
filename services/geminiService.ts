@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message } from "../types";
 
@@ -5,6 +6,13 @@ const SYSTEM_INSTRUCTION = `You are "TTT JNAN ChatBot".
 
 MAIN PURPOSE:
 Use ONLY the DCET study material content linked in the backend. Fetch silently. Never expose links. Never ask for uploads. Stay strictly DCET-focused.
+
+IMAGE ANALYSIS:
+You can now analyze images (diagrams, formulas, textbook screenshots).
+- Extract relevant information (questions, text, or concepts from diagrams).
+- Answer ONLY if the content is related to DCET or Diploma studies.
+- If the image content is unrelated to DCET, reply exactly: "**Sorry — I can answer only DCET related questions.**"
+- If the image is too blurry or unreadable, reply: "I'm sorry, the image is a bit blurry. Could you please re-upload a clearer shot?"
 
 SUBJECT FOCUS:
 If a user query is prefixed with "In [Subject]: " (e.g., "In Mathematics: [Question]"), strictly prioritize content and definitions related to that specific DCET domain from the materials.
@@ -41,7 +49,8 @@ export class GeminiService {
 
   async sendMessage(
     prompt: string,
-    history: Message[]
+    history: Message[],
+    image?: { data: string; mimeType: string }
   ): Promise<string> {
     const keys = (process.env.API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
     const creditsLine = "**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
@@ -50,14 +59,35 @@ export class GeminiService {
       return "**Service temporarily busy. Please try again later.**";
     }
 
-    const contents = history.map(msg => ({
-      role: msg.role === 'bot' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    }));
+    const contents = history.map(msg => {
+      const parts: any[] = [{ text: msg.content }];
+      if (msg.image) {
+        parts.push({
+          inlineData: {
+            data: msg.image.data,
+            mimeType: msg.image.mimeType
+          }
+        });
+      }
+      return {
+        role: msg.role === 'bot' ? 'model' : 'user',
+        parts: parts
+      };
+    });
     
+    const currentParts: any[] = [{ text: prompt }];
+    if (image) {
+      currentParts.push({
+        inlineData: {
+          data: image.data,
+          mimeType: image.mimeType
+        }
+      });
+    }
+
     contents.push({
       role: 'user',
-      parts: [{ text: prompt }]
+      parts: currentParts
     });
 
     for (const key of keys) {
@@ -69,13 +99,12 @@ export class GeminiService {
           contents: contents,
           config: {
             systemInstruction: SYSTEM_INSTRUCTION,
-            temperature: 0.1, // High consistency
+            temperature: 0.1,
           }
         });
 
         let text = response.text || "**I couldn't find the answer in the provided study material.**";
         
-        // Ensure mandatory credits are present
         if (!text.includes("Credits: Created by Dr. Savin")) {
           text = text.trim() + "\n\n" + creditsLine;
         }

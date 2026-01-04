@@ -4,6 +4,10 @@ export interface Message {
   role: 'user' | 'bot';
   content: string;
   timestamp: Date;
+  image?: {
+    data: string; // base64
+    mimeType: string;
+  };
 }
 
 export type Theme = 'light' | 'dark';

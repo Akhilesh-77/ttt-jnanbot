@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Message } from '../types';
 import html2canvas from 'html2canvas';
@@ -64,9 +65,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
         }`}
       >
         <div className="flex justify-between items-center mb-3 gap-6">
-          <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isBot ? (isDarkMode ? 'text-indigo-400' : 'text-indigo-600') : 'text-indigo-200'}`}>
-            {isBot ? 'TTT JNAN ChatBot' : 'Student'}
-          </span>
+          <div className="flex items-center space-x-2">
+            {isBot && (
+              <img 
+                src="https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png" 
+                alt="Bot Avatar" 
+                className="h-5 w-5 rounded-full object-cover border border-indigo-500/30"
+              />
+            )}
+            <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isBot ? (isDarkMode ? 'text-indigo-400' : 'text-indigo-600') : 'text-indigo-200'}`}>
+              {isBot ? 'TTT JNAN ChatBot' : 'Student'}
+            </span>
+          </div>
           <div className="flex items-center space-x-2">
             <span className="text-[10px] opacity-40 font-mono">
               {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -74,6 +84,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
           </div>
         </div>
         
+        {message.image && (
+          <div className="mb-4 rounded-xl overflow-hidden border border-white/10 shadow-md">
+            <img 
+              src={`data:${message.image.mimeType};base64,${message.image.data}`} 
+              alt="Uploaded content" 
+              className="max-w-full h-auto object-contain max-h-[300px]"
+            />
+          </div>
+        )}
+
         <div className="text-[15px] md:text-[17px] leading-relaxed whitespace-pre-wrap">
           {isEditing ? (
             <div className="flex flex-col space-y-2">
