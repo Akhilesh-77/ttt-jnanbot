@@ -39,7 +39,7 @@ const AskTeachers: React.FC<AskTeachersProps> = ({ isDarkMode, onBack }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h2 className="text-2xl font-bold tracking-tight">Ask Teachers</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Askk Teachers</h2>
       </div>
 
       <div className={`flex-1 flex flex-col p-6 rounded-3xl glass border shadow-xl ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
