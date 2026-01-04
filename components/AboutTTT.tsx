@@ -21,14 +21,14 @@ const TTT_ICONS = {
 
 const TTT_LINKS = {
   website: "https://tttacademics.com/",
-  desktop: "https://tttacademy.in/downloads/desktop",
-  android: "https://tttacademy.in/downloads/android",
-  ios: "https://tttacademy.in/downloads/ios",
-  studentPortal: "https://tttacademy.in/student-portal", // Update this link as needed
-  youtube: "https://youtube.com/@tttacademy",
-  telegram: "https://t.me/tttacademy",
-  whatsapp: "https://chat.whatsapp.com/example",
-  instagram: "https://instagram.com/tttacademy"
+  desktop: "https://cdn-cp-assets-public.classplus.co/CampaignManager/87650200-e57a-11f0-b87b-85ef56234973.exe",
+  android: "https://play.google.com/store/apps/details?id=co.diy17.uxsoa",
+  ios: "https://apps.apple.com/in/app/classplus/id1324522260",
+  studentPortal: "https://tttacademy.in/NOMS/user/student_progress", // Update this link as needed
+  youtube: "https://youtube.com/@tttacademy1?si=_Efp6w25bKdsdddj",
+  telegram: "https://t.me/DCET_TTT",
+  whatsapp: "https://whatsapp.com/channel/0029VaLimVM9mrGiKWLVoB3G",
+  instagram: "https://share.google/QiE9ByggHWY0K07rO"
 };
 
 const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
@@ -60,7 +60,7 @@ const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
           </div>
           <div className="text-left">
             <span className="block font-bold text-sm">Official Website</span>
-            <span className="text-[10px] text-slate-400">tttacademics.com</span>
+            <span className="text-[10px] text-slate-400">Visit our Official Website</span>
           </div>
         </button>
 
@@ -90,7 +90,7 @@ const AboutTTT: React.FC<AboutTTTProps> = ({ isDarkMode, onBack }) => {
           </div>
           <div className="text-left">
             <span className="block font-bold text-sm">iOS App</span>
-            <span className="text-[10px] text-slate-400">Apple App Store</span>
+            <span className="text-[10px] text-slate-400">Apple App Store use code ORG: uxsoa</span>
           </div>
         </button>
 
