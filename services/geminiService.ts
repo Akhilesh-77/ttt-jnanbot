@@ -47,16 +47,22 @@ Academic, polite, and strictly focused on DCET curriculum.`;
 export class GeminiService {
   constructor() {}
 
+  private sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async sendMessage(
     prompt: string,
     history: Message[],
-    image?: { data: string; mimeType: string }
+    image?: { data: string; mimeType: string },
+    onRetry?: (msg: string) => void
   ): Promise<string> {
     const keys = (process.env.API_KEY || '').split(',').map(k => k.trim()).filter(Boolean);
     const creditsLine = "**Credits: Created by Dr. Savin (TTT Academy). Assisted by Akhilesh U.**";
+    const fallbackBusyMessage = "Sorry, the server is a bit busy right now. Please try again in a few seconds.";
 
     if (keys.length === 0) {
-      return "**Service temporarily busy. Please try again later.**";
+      return fallbackBusyMessage;
     }
 
     const contents = history.map(msg => {
@@ -90,8 +96,13 @@ export class GeminiService {
       parts: currentParts
     });
 
-    for (const key of keys) {
+    const maxRetries = 3;
+    let attempt = 0;
+    let currentKeyIndex = 0;
+
+    while (attempt < maxRetries) {
       try {
+        const key = keys[currentKeyIndex];
         const ai = new GoogleGenAI({ apiKey: key });
         
         const response: GenerateContentResponse = await ai.models.generateContent({
@@ -110,13 +121,27 @@ export class GeminiService {
         }
         
         return text;
-      } catch (error) {
-        console.warn(`Key rotation failover...`);
-        continue;
+      } catch (error: any) {
+        console.error(`Gemini Error (Attempt ${attempt + 1}):`, error);
+        
+        attempt++;
+        
+        // If we have more attempts, wait and notify
+        if (attempt < maxRetries) {
+          if (onRetry) {
+            onRetry("Please wait a moment — fetching answer… 🙂");
+          }
+          
+          // Switch to next key for next attempt
+          currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+          
+          // Wait 2 seconds before retry
+          await this.sleep(2000);
+        }
       }
     }
 
-    return "**Service temporarily busy. Please try again later.**";
+    return fallbackBusyMessage;
   }
 }
 

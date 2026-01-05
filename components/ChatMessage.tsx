@@ -68,7 +68,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
           <div className="flex items-center space-x-2">
             {isBot && (
               <img 
-                src="https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png" 
+                src="https://tttacademics.com/logos/x-icon.png" 
                 alt="Bot Avatar" 
                 className="h-5 w-5 rounded-full object-cover border border-indigo-500/30"
               />

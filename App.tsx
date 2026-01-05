@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [botState, setBotState] = useState<BotState>(BotState.IDLE);
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<ActiveView>('chat');
@@ -204,9 +205,10 @@ const App: React.FC = () => {
     const newContext = [...updatedHistory, updatedUserMsg];
     setMessages(newContext);
     setBotState(BotState.LOADING);
+    setLoadingStatus('');
 
     try {
-      const botResponse = await geminiService.sendMessage(newContent, updatedHistory);
+      const botResponse = await geminiService.sendMessage(newContent, updatedHistory, undefined, setLoadingStatus);
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'bot',
@@ -218,6 +220,7 @@ const App: React.FC = () => {
       console.error("Regeneration failed", error);
     } finally {
       setBotState(BotState.IDLE);
+      setLoadingStatus('');
     }
   };
 
@@ -254,8 +257,14 @@ const App: React.FC = () => {
     setInput('');
     setSelectedImage(null);
     setBotState(BotState.LOADING);
+    setLoadingStatus('');
 
-    const botResponse = await geminiService.sendMessage(currentInput || "Analyze this image for DCET content.", messages, currentImage || undefined);
+    const botResponse = await geminiService.sendMessage(
+      currentInput || "Analyze this image for DCET content.", 
+      messages, 
+      currentImage || undefined,
+      setLoadingStatus
+    );
     
     const botMsg: Message = {
       id: (Date.now() + 1).toString(),
@@ -266,6 +275,7 @@ const App: React.FC = () => {
     
     setMessages(prev => [...prev, botMsg]);
     setBotState(BotState.IDLE);
+    setLoadingStatus('');
   };
 
   const handleSubjectTab = (subject: string) => {
@@ -554,10 +564,17 @@ const App: React.FC = () => {
               {botState === BotState.LOADING && (
                 <div className="flex flex-col items-start mb-8 animate-pulse px-4">
                   <div className={`p-4 rounded-2xl rounded-tl-none ${theme === 'dark' ? 'bg-slate-800' : 'bg-white border border-slate-100'}`}>
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                      </div>
+                      {loadingStatus && (
+                        <p className="text-[11px] font-bold text-indigo-500 animate-in fade-in duration-300">
+                          {loadingStatus}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
