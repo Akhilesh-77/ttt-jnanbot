@@ -1,81 +1,61 @@
-
 const CACHE_NAME = 'jnan-bot-cache-v3';
+
 const CORE_ASSETS = [
   '/',
   '/index.html',
-  '/index.css',
-  '/manifest.json',
-  '/index.tsx'
+  '/manifest.json'
 ];
 
-// On install, cache the essential App Shell
+// Install — cache app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      // Use standard URLs for caching to match manifest start_url
-      return cache.addAll(CORE_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
   );
   self.skipWaiting();
 });
 
-// Clean up old caches immediately
+// Activate — clear old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Clearing old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
+    caches.keys().then((names) =>
+      Promise.all(
+        names.map((n) => {
+          if (n !== CACHE_NAME) return caches.delete(n);
         })
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
-// Fetch logic with strict SPA 404 fallback
+// Fetch — SPA fallback + cache-first
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
+  const req = event.request;
 
-  // Handle Navigation Requests (HTML) - Critical for Mobile SPA 404 fix
-  if (request.mode === 'navigate') {
+  // 1️⃣ Handle navigation (fixes 404 in PWA)
+  if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // If the server returns a 404, the user is likely on a sub-route.
-          // Fallback to index.html to let the client-side router handle it.
-          if (response.status === 404) {
-            return caches.match('/index.html') || caches.match('/');
-          }
-          return response;
-        })
-        .catch(() => {
-          // If offline or network fails, serve the cached shell
-          return caches.match('/index.html') || caches.match('/');
-        })
+      fetch('/index.html').catch(() =>
+        caches.match('/index.html')
+      )
     );
     return;
   }
 
-  // Handle Static Assets
+  // 2️⃣ Cache-first for everything else
   event.respondWith(
-    caches.match(request).then((response) => {
-      return response || fetch(request).then((fetchResponse) => {
-        // Cache assets on the fly if successful
-        if (fetchResponse && fetchResponse.status === 200 && fetchResponse.type === 'basic') {
-          const responseToCache = fetchResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return fetchResponse;
-      }).catch(() => {
-        // Fail silently for non-critical assets
-        return new Response('Asset not available offline', { status: 404 });
-      });
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return res;
+        })
+        .catch(() => new Response('Network error', { status: 408 }));
     })
   );
 });
