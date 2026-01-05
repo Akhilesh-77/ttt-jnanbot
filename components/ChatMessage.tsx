@@ -11,7 +11,8 @@ interface ChatMessageProps {
   userName?: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete, onEdit, userName }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({
+   message, isDarkMode, onDelete, onEdit, userName }) => {
   const isBot = message.role === 'bot';
   const messageRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,6 +24,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
       const canvas = await html2canvas(messageRef.current, {
         backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
         scale: 2,
+
         logging: false,
         useCORS: true,
       });
@@ -69,13 +71,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
           <div className="flex items-center space-x-2">
             {isBot && (
               <img 
-                src="https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png" 
+                src="https://i.postimg.cc/YC2MXrVy/Whats-App-Image-2026-01-05-at-2.jpg" 
                 alt="Bot Avatar" 
                 className="h-5 w-5 rounded-full object-cover border border-indigo-500/30"
               />
             )}
             <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isBot ? (isDarkMode ? 'text-indigo-400' : 'text-indigo-600') : 'text-indigo-200'}`}>
-              {isBot ? 'TTT JNAN ChatBot' : (userName || 'Student')}
+              {isBot ? 'TTT JNAN ChatBot' : (userName || '')}
             </span>
           </div>
           <div className="flex items-center space-x-2">
