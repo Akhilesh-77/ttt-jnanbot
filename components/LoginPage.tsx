@@ -10,7 +10,7 @@ interface LoginPageProps {
 }
 
 const ACADEMY_LOGO = "https://tttacademy.in/NOMS/files/images/static/Main-logo.png";
-const BOT_ICON = "https://i.postimg.cc/5NvyPXFC/Gemini-Generated-Image-10lpm010lpm010lp.png";
+const BOT_ICON = "https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png";
 
 const LoginPage: React.FC<LoginPageProps> = ({ theme, onLoginSuccess, showInstallButton, onInstallClick }) => {
   const [username, setUsername] = useState('');
