@@ -65,6 +65,14 @@ export class GeminiService {
       return fallbackBusyMessage;
     }
 
+    // Fallback models in priority order
+    const modelChain = [
+      'gemini-3-flash-preview',
+      'gemini-3-pro-preview',
+      'gemini-flash-latest',
+      'gemini-flash-lite-latest'
+    ];
+
     const contents = history.map(msg => {
       const parts: any[] = [{ text: msg.content }];
       if (msg.image) {
@@ -96,47 +104,40 @@ export class GeminiService {
       parts: currentParts
     });
 
-    const maxRetries = 3;
-    let attempt = 0;
-    let currentKeyIndex = 0;
+    // Outer loop: Try each model in the chain
+    for (const modelName of modelChain) {
+      // Inner loop: Try each API key for the current model
+      for (const key of keys) {
+        try {
+          const ai = new GoogleGenAI({ apiKey: key });
+          
+          const response: GenerateContentResponse = await ai.models.generateContent({
+            model: modelName,
+            contents: contents,
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              temperature: 0.1,
+            }
+          });
 
-    while (attempt < maxRetries) {
-      try {
-        const key = keys[currentKeyIndex];
-        const ai = new GoogleGenAI({ apiKey: key });
-        
-        const response: GenerateContentResponse = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: contents,
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-            temperature: 0.1,
+          let text = response.text || "**I couldn't find the answer in the provided study material.**";
+          
+          if (!text.includes("Credits: Created by Dr. Savin")) {
+            text = text.trim() + "\n\n" + creditsLine;
           }
-        });
-
-        let text = response.text || "**I couldn't find the answer in the provided study material.**";
-        
-        if (!text.includes("Credits: Created by Dr. Savin")) {
-          text = text.trim() + "\n\n" + creditsLine;
-        }
-        
-        return text;
-      } catch (error: any) {
-        console.error(`Gemini Error (Attempt ${attempt + 1}):`, error);
-        
-        attempt++;
-        
-        // If we have more attempts, wait and notify
-        if (attempt < maxRetries) {
+          
+          return text;
+        } catch (error: any) {
+          // Log only to console
+          console.error(`Gemini Error (Model: ${modelName}, Key: ${key.slice(0, 4)}...):`, error);
+          
+          // Notify UI that we are retrying/switching
           if (onRetry) {
             onRetry("Please wait a moment — fetching answer… 🙂");
           }
           
-          // Switch to next key for next attempt
-          currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-          
-          // Wait 2 seconds before retry
-          await this.sleep(2000);
+          // Short delay before next attempt
+          await this.sleep(1500);
         }
       }
     }
