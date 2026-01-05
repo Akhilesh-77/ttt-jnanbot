@@ -8,9 +8,10 @@ interface ChatMessageProps {
   isDarkMode: boolean;
   onDelete: (id: string) => void;
   onEdit?: (id: string, newContent: string) => void;
+  userName?: string;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete, onEdit }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete, onEdit, userName }) => {
   const isBot = message.role === 'bot';
   const messageRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -68,13 +69,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isDarkMode, onDelete
           <div className="flex items-center space-x-2">
             {isBot && (
               <img 
-                src="https://tttacademics.com/logos/x-icon.png" 
+                src="https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png" 
                 alt="Bot Avatar" 
                 className="h-5 w-5 rounded-full object-cover border border-indigo-500/30"
               />
             )}
             <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isBot ? (isDarkMode ? 'text-indigo-400' : 'text-indigo-600') : 'text-indigo-200'}`}>
-              {isBot ? 'TTT JNAN ChatBot' : 'Student'}
+              {isBot ? 'TTT JNAN ChatBot' : (userName || 'Student')}
             </span>
           </div>
           <div className="flex items-center space-x-2">

@@ -557,6 +557,7 @@ const App: React.FC = () => {
                     isDarkMode={theme === 'dark'} 
                     onDelete={deleteMessage}
                     onEdit={msg.role === 'user' ? editUserMessage : undefined}
+                    userName={userName || undefined}
                   />
                 ))
               )}

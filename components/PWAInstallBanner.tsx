@@ -18,7 +18,7 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ isDarkMode, onInsta
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-indigo-600/10 rounded-xl">
             <img 
-              src="https://i.postimg.cc/5NvyPXFC/Gemini-Generated-Image-10lpm010lpm010lp.png" 
+              src="https://i.postimg.cc/90KxzRQ0/Gemini-Generated-Image-o5mzvco5mzvco5mz.png" 
               alt="App Icon" 
               className="h-8 w-8 rounded-lg object-cover"
             />
