@@ -33,6 +33,9 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<ActiveView>('chat');
   
+  // Visual Viewport Height for Mobile Keyboard Fix
+  const [visualHeight, setVisualHeight] = useState<string | number>('100dvh');
+
   // Image Understanding States
   const [selectedImage, setSelectedImage] = useState<{ data: string; mimeType: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +46,25 @@ const App: React.FC = () => {
   const [tempName, setTempName] = useState(userName || '');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Handle Visual Viewport Resizing (Mobile Keyboard)
+  useEffect(() => {
+    if (!window.visualViewport) return;
+
+    const handleResize = () => {
+      // Use the actual height of the visual viewport to prevent keyboard overlay
+      setVisualHeight(window.visualViewport ? window.visualViewport.height : '100dvh');
+    };
+
+    window.visualViewport.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('scroll', handleResize);
+    handleResize(); // Initial check
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -266,12 +288,28 @@ const App: React.FC = () => {
     setActiveView('chat');
   };
 
+  // Focus trigger for mobile keyboard visibility
+  const handleInputFocus = () => {
+    if (window.innerWidth < 768) {
+      setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 300); // Wait for keyboard expansion animation
+    }
+  };
+
   // Only show manual button if app isn't installed and the browser supports it
   const canShowInstallButton = !isInstalled && deferredPrompt !== null;
 
+  const containerStyle = {
+    height: typeof visualHeight === 'number' ? `${visualHeight}px` : visualHeight,
+  };
+
   if (!isAuthenticated) {
     return (
-      <div className={`transition-colors duration-300 min-h-screen ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      <div 
+        style={containerStyle}
+        className={`transition-colors duration-300 min-h-screen ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'}`}
+      >
         {/* Banner only appears if manual button was clicked */}
         {showInstallBanner && (
           <PWAInstallBanner 
@@ -295,7 +333,10 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`flex flex-col h-[100dvh] overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div 
+      style={containerStyle}
+      className={`flex flex-col overflow-hidden transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}
+    >
       
       {isNameModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -585,6 +626,7 @@ const App: React.FC = () => {
 
                   <textarea
                     value={input}
+                    onFocus={handleInputFocus}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                     placeholder="Ask any DCET related doubt..."
